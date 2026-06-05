@@ -60,6 +60,8 @@ export interface Note {
   downloads: number;
   isCommunity?: boolean;
   approved?: boolean;
+  pdfUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface PYQ {
@@ -72,6 +74,7 @@ export interface PYQ {
   isCommunity?: boolean;
   approved?: boolean;
   author?: string;
+  pdfUrl?: string;
 }
 
 export interface ImportantQuestion {

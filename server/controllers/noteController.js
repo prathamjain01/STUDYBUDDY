@@ -7,14 +7,77 @@ import fs from "fs";
  */
 export const uploadNote = async (req, res, next) => {
     try {
-        const { title, description, subject, semester, branch, university, pdfUrl, thumbnailUrl, uploadedBy } = req.body;
+        const { title, subject, semester, branch, uploadedBy } = req.body;
+        const description = req.body.description || "Study material uploaded by community member.";
+        const university = req.body.university || "Rajiv Gandhi Proudyogiki Vishwavidyalaya (RGPV)";
 
-        // Check required fields
-        if (!title || !description || !subject || !semester || !branch || !university || !pdfUrl) {
+        // Check required fields (metadata)
+        if (!title || !subject || !semester || !branch) {
+            // Clean up any uploaded files if validation fails
+            if (req.files) {
+                if (req.files.pdf) fs.unlinkSync(req.files.pdf[0].path);
+                if (req.files.thumbnail) fs.unlinkSync(req.files.thumbnail[0].path);
+            }
             return res.status(400).json({
                 success: false,
-                message: "All fields are required (title, description, subject, semester, branch, university, pdfUrl)"
+                message: "All text fields are required (title, subject, semester, branch)"
             });
+        }
+
+        // Check if PDF file was uploaded
+        if (!req.files || !req.files.pdf) {
+            if (req.files && req.files.thumbnail) fs.unlinkSync(req.files.thumbnail[0].path);
+            return res.status(400).json({
+                success: false,
+                message: "Please upload a PDF file for the note!"
+            });
+        }
+
+        const pdfFile = req.files.pdf[0];
+        let pdfUrl = "";
+        let pdfPublicId = "";
+        let thumbnailUrl = "";
+        let thumbnailPublicId = "";
+
+        // Upload PDF to Cloudinary
+        try {
+            const pdfUploadResult = await cloudinary.uploader.upload(pdfFile.path, {
+                resource_type: "auto",
+                folder: "studybuddy/pdfs"
+            });
+            pdfUrl = pdfUploadResult.secure_url;
+            pdfPublicId = pdfUploadResult.public_id;
+        } finally {
+            // Ensure temp file is deleted even if upload fails
+            try {
+                if (fs.existsSync(pdfFile.path)) {
+                    fs.unlinkSync(pdfFile.path);
+                }
+            } catch (err) {
+                console.error("Failed to delete temp PDF file:", err);
+            }
+        }
+
+        // Upload thumbnail if provided
+        if (req.files.thumbnail) {
+            const thumbnailFile = req.files.thumbnail[0];
+            try {
+                const thumbnailUploadResult = await cloudinary.uploader.upload(thumbnailFile.path, {
+                    resource_type: "image",
+                    folder: "studybuddy/thumbnails"
+                });
+                thumbnailUrl = thumbnailUploadResult.secure_url;
+                thumbnailPublicId = thumbnailUploadResult.public_id;
+            } finally {
+                // Ensure temp file is deleted even if upload fails
+                try {
+                    if (fs.existsSync(thumbnailFile.path)) {
+                        fs.unlinkSync(thumbnailFile.path);
+                    }
+                } catch (err) {
+                    console.error("Failed to delete temp thumbnail file:", err);
+                }
+            }
         }
 
         // Save Note metadata to MongoDB
@@ -26,9 +89,9 @@ export const uploadNote = async (req, res, next) => {
             branch,
             university,
             pdfUrl,
-            pdfPublicId: "",
-            thumbnailUrl: thumbnailUrl || "",
-            thumbnailPublicId: "",
+            pdfPublicId,
+            thumbnailUrl,
+            thumbnailPublicId,
             uploadedBy: uploadedBy || "Admin"
         });
 
@@ -38,6 +101,19 @@ export const uploadNote = async (req, res, next) => {
             data: newNote
         });
     } catch (error) {
+        // Clean up temp files if anything crashes before they are unlinked
+        if (req.files) {
+            try {
+                if (req.files.pdf && fs.existsSync(req.files.pdf[0].path)) {
+                    fs.unlinkSync(req.files.pdf[0].path);
+                }
+                if (req.files.thumbnail && fs.existsSync(req.files.thumbnail[0].path)) {
+                    fs.unlinkSync(req.files.thumbnail[0].path);
+                }
+            } catch (err) {
+                console.error("Clean up error on catch block:", err);
+            }
+        }
         next(error);
     }
 };

@@ -8,6 +8,7 @@ import {
     downloadNote,
     deleteNote
 } from "../controllers/noteController.js";
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -18,6 +19,10 @@ const router = express.Router();
  */
 router.post(
     "/upload",
+    upload.fields([
+        { name: "pdf", maxCount: 1 },
+        { name: "thumbnail", maxCount: 1 }
+    ]),
     uploadNote
 );
 

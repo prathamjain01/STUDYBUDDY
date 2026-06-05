@@ -4,6 +4,7 @@ import cors from "cors";
 import { connectdb } from "./config/db.js";
 import userRouter from "./routes/user.routes.js";
 import noteRouter from "./routes/noteRoutes.js";
+import pyqRouter from "./routes/pyqRoutes.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ connectdb();
 // Routes
 app.use("/api/user", userRouter);
 app.use("/api/notes", noteRouter);
+app.use("/api/pyqs", pyqRouter);
 
 // Centralized error handling middleware
 app.use((err, req, res, next) => {

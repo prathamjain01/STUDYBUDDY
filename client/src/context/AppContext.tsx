@@ -32,17 +32,23 @@ export interface AppState {
   toggleStudied: (id: string) => void;
   registerDownload: (id: string, type: 'note' | 'pyq') => void;
   toggleTheme: () => void;
-  uploadResource: (resource: {
-    title: string;
-    subjectId: string;
-    unit?: string;
-    category?: Note['category'];
-    year?: number;
-    examType?: PYQ['examType'];
-    type: 'note' | 'pyq';
-    author: string;
-    fileSize: string;
-  }) => void;
+  uploadResource: (
+    resource: {
+      title: string;
+      subjectId: string;
+      semester: number;
+      branch: string;
+      unit?: string;
+      category?: Note['category'];
+      year?: number;
+      examType?: PYQ['examType'];
+      type: 'note' | 'pyq';
+      author: string;
+      fileSize: string;
+    },
+    pdfFile: File,
+    thumbnailFile?: File
+  ) => Promise<boolean>;
   approveResource: (id: string) => void;
   rejectResource: (id: string) => void;
   upvoteResource: (id: string) => void;
@@ -110,6 +116,80 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     if (storedUpvotes) setUpvotes(JSON.parse(storedUpvotes));
     if (storedAnalytics) setAnalytics(JSON.parse(storedAnalytics));
+  }, []);
+
+  // Fetch real uploaded notes & PYQs from backend
+  useEffect(() => {
+    const fetchBackendNotes = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/notes?limit=100");
+        if (response.ok) {
+          const resData = await response.json();
+          const backendNotes = resData.data.notes; // Array of Notes from backend
+          
+          // Map backend notes schema to frontend Note schema
+          const mappedNotes: Note[] = backendNotes.map((bn: any) => ({
+            id: bn._id,
+            subjectId: bn.subject, // Map 'subject' field to 'subjectId'
+            title: bn.title,
+            unit: bn.unit || "All Units",
+            category: bn.category || "Student Notes",
+            author: bn.uploadedBy || "Admin",
+            uploadDate: bn.createdAt ? bn.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            fileSize: bn.fileSize || "2.4 MB",
+            downloads: bn.downloads || 0,
+            isCommunity: true,
+            approved: true, // Backend retrieves approved notes by default
+            pdfUrl: bn.pdfUrl,
+            thumbnailUrl: bn.thumbnailUrl || ""
+          }));
+
+          setNotes(prevNotes => {
+            // Filter out notes that have the same id to avoid duplicates
+            const localIds = new Set(prevNotes.map(n => n.id));
+            const newMapped = mappedNotes.filter(n => !localIds.has(n.id));
+            return [...newMapped, ...prevNotes];
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch notes from backend server:", err);
+      }
+    };
+
+    const fetchBackendPyqs = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/pyqs");
+        if (response.ok) {
+          const resData = await response.json();
+          const backendPyqs = resData.data; // Array of PYQs from backend
+          
+          // Map backend pyq schema to frontend PYQ schema
+          const mappedPyqs: PYQ[] = backendPyqs.map((bp: any) => ({
+            id: bp._id,
+            subjectId: bp.subject, // Map 'subject' field to 'subjectId'
+            year: bp.year,
+            examType: bp.examType || "Regular",
+            fileSize: bp.fileSize || "2.4 MB",
+            downloads: bp.downloads || 0,
+            isCommunity: true,
+            approved: true, // Backend retrieves approved PYQs by default
+            pdfUrl: bp.pdfUrl,
+            author: bp.uploadedBy || "Anonymous"
+          }));
+
+          setPyqs(prevPyqs => {
+            const localIds = new Set(prevPyqs.map(p => p.id));
+            const newMapped = mappedPyqs.filter(p => !localIds.has(p.id));
+            return [...newMapped, ...prevPyqs];
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch PYQs from backend server:", err);
+      }
+    };
+
+    fetchBackendNotes();
+    fetchBackendPyqs();
   }, []);
 
   const save = (key: string, value: any) => {
@@ -198,50 +278,101 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle('dark', nextTheme === 'dark');
   };
 
-  const uploadResource = (resource: {
-    title: string;
-    subjectId: string;
-    unit?: string;
-    category?: Note['category'];
-    year?: number;
-    examType?: PYQ['examType'];
-    type: 'note' | 'pyq';
-    author: string;
-    fileSize: string;
-  }) => {
-    const uniqueId = `comp-${Date.now()}`;
-    if (resource.type === 'note') {
-      const newNote: Note = {
-        id: uniqueId,
-        subjectId: resource.subjectId,
-        title: resource.title,
-        unit: resource.unit || 'All Units',
-        category: resource.category || 'Student Notes',
-        author: resource.author,
-        uploadDate: new Date().toISOString().split('T')[0],
-        fileSize: resource.fileSize,
-        downloads: 0,
-        isCommunity: true,
-        approved: false
-      };
-      const nextNotes = [newNote, ...notes];
-      setNotes(nextNotes);
-      save('rgpv_notes', nextNotes);
-    } else {
-      const newPyq: PYQ = {
-        id: uniqueId,
-        subjectId: resource.subjectId,
-        year: resource.year || new Date().getFullYear(),
-        examType: resource.examType || 'Regular',
-        fileSize: resource.fileSize,
-        downloads: 0,
-        isCommunity: true,
-        approved: false,
-        author: resource.author
-      };
-      const nextPyqs = [newPyq, ...pyqs];
-      setPyqs(nextPyqs);
-      save('rgpv_pyqs', nextPyqs);
+  const uploadResource = async (
+    resource: {
+      title: string;
+      subjectId: string;
+      semester: number;
+      branch: string;
+      unit?: string;
+      category?: Note['category'];
+      year?: number;
+      examType?: PYQ['examType'];
+      type: 'note' | 'pyq';
+      author: string;
+      fileSize: string;
+    },
+    pdfFile: File,
+    thumbnailFile?: File
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("subject", resource.subjectId);
+      formData.append("semester", String(resource.semester));
+      formData.append("branch", resource.branch);
+      formData.append("uploadedBy", resource.author);
+      formData.append("pdf", pdfFile);
+
+      let uploadEndpoint = "http://localhost:3000/api/notes/upload";
+
+      if (resource.type === "note") {
+        formData.append("title", resource.title);
+        if (thumbnailFile) {
+          formData.append("thumbnail", thumbnailFile);
+        }
+      } else {
+        formData.append("title", resource.title || `RGPV ${resource.year} ${resource.examType} Exam Paper`);
+        formData.append("year", String(resource.year || new Date().getFullYear()));
+        formData.append("examType", resource.examType || "Regular");
+        uploadEndpoint = "http://localhost:3000/api/pyqs/upload";
+      }
+
+      const response = await fetch(uploadEndpoint, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to upload ${resource.type}`);
+      }
+
+      const responseData = await response.json();
+      const newFromBackend = responseData.data;
+      const uniqueId = newFromBackend._id;
+
+      if (resource.type === 'note') {
+        const newNote: Note = {
+          id: uniqueId,
+          subjectId: resource.subjectId,
+          title: resource.title,
+          unit: resource.unit || 'All Units',
+          category: resource.category || 'Student Notes',
+          author: resource.author,
+          uploadDate: new Date().toISOString().split('T')[0],
+          fileSize: resource.fileSize,
+          downloads: 0,
+          isCommunity: true,
+          approved: false,
+          pdfUrl: newFromBackend.pdfUrl,
+          thumbnailUrl: newFromBackend.thumbnailUrl || ""
+        };
+        const nextNotes = [newNote, ...notes];
+        setNotes(nextNotes);
+        save('rgpv_notes', nextNotes);
+      } else {
+        const newPyq: PYQ = {
+          id: uniqueId,
+          subjectId: resource.subjectId,
+          year: resource.year || new Date().getFullYear(),
+          examType: resource.examType || 'Regular',
+          fileSize: resource.fileSize,
+          downloads: 0,
+          isCommunity: true,
+          approved: false,
+          author: resource.author,
+          pdfUrl: newFromBackend.pdfUrl
+        };
+        const nextPyqs = [newPyq, ...pyqs];
+        setPyqs(nextPyqs);
+        save('rgpv_pyqs', nextPyqs);
+      }
+      showToast("Uploaded successfully for Admin review!", "success");
+      return true;
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      showToast(error.message || "Upload failed", "error");
+      return false;
     }
   };
 

@@ -1008,7 +1008,7 @@ function SubjectSection({ params, navigate }: { params: Record<string, string>; 
   const [notesSearch, setNotesSearch] = useState('');
   const [selectedUnitFilter, setSelectedUnitFilter] = useState('All');
   
-  const [previewFile, setPreviewFile] = useState<{ title: string; type: 'note' | 'pyq' } | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ title: string; type: 'note' | 'pyq'; pdfUrl?: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const subject = SUBJECTS.find(s => s.id === subjectId);
@@ -1314,7 +1314,7 @@ RGPV Exam Hub.`;
                       <span>{note.fileSize} • {note.downloads} Downloads</span>
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => setPreviewFile({ title: note.title, type: 'note' })}
+                          onClick={() => setPreviewFile({ title: note.title, type: 'note', pdfUrl: note.pdfUrl })}
                           className="flex items-center gap-1 hover:text-primary-500 transition-colors bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40 py-1.5 px-3 rounded-lg cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" /> View
@@ -1362,7 +1362,7 @@ RGPV Exam Hub.`;
                       <span>{pyq.fileSize} • {pyq.downloads} Downloads</span>
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => setPreviewFile({ title: `RGPV ${pyq.year} PYQ Paper`, type: 'pyq' })}
+                          onClick={() => setPreviewFile({ title: `RGPV ${pyq.year} PYQ Paper`, type: 'pyq', pdfUrl: pyq.pdfUrl })}
                           className="flex items-center gap-1 hover:text-primary-500 transition-colors bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40 py-1.5 px-3 rounded-lg cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" /> View
@@ -1681,99 +1681,107 @@ RGPV Exam Hub.`;
               </button>
             </div>
 
-            <div className="flex-1 bg-slate-100/60 dark:bg-slate-900/60 p-6 overflow-y-auto flex justify-center">
-              <div className="bg-white text-slate-800 max-w-2xl w-full p-8 sm:p-12 shadow-xl rounded-2xl flex flex-col justify-between aspect-[1/1.4] select-none h-fit border border-slate-200/50">
-                <div className="space-y-6">
-                  {previewFile.type === 'pyq' ? (
-                    <>
-                      <div className="border-b-2 border-secondary-500 pb-4 text-center">
-                        <p className="text-[10px] uppercase font-black text-slate-450 tracking-wider">🎓 RGPV OFFICIAL QUESTION PAPER</p>
-                        <h2 className="font-display text-base sm:text-lg font-black text-slate-800 mt-1">
-                          {subject.name} ({subject.code})
-                        </h2>
-                        <p className="text-[9px] text-slate-400 mt-0.5">
-                          B.Tech. VI Sem Exam • Year {previewFile.title.match(/\d+/)?.[0] || '2025'}
-                        </p>
-                      </div>
-
-                      <div className="space-y-4 text-xs leading-relaxed text-slate-650 font-semibold">
-                        <div className="flex justify-between text-[10px] border-b pb-2 text-slate-450 font-bold">
-                          <span>TIME: 3 HOURS</span>
-                          <span>MAX MARKS: 70</span>
+            <div className="flex-1 bg-slate-100/60 dark:bg-slate-900/60 p-4 overflow-hidden flex justify-center items-center">
+              {previewFile.pdfUrl ? (
+                <iframe
+                  src={previewFile.pdfUrl}
+                  className="w-full h-full rounded-2xl border-none shadow-lg bg-white"
+                  title={previewFile.title}
+                />
+              ) : (
+                <div className="bg-white text-slate-800 max-w-2xl w-full p-8 sm:p-12 shadow-xl rounded-2xl flex flex-col justify-between aspect-[1/1.4] select-none h-fit border border-slate-200/50">
+                  <div className="space-y-6">
+                    {previewFile.type === 'pyq' ? (
+                      <>
+                        <div className="border-b-2 border-secondary-500 pb-4 text-center">
+                          <p className="text-[10px] uppercase font-black text-slate-450 tracking-wider">🎓 RGPV OFFICIAL QUESTION PAPER</p>
+                          <h2 className="font-display text-base sm:text-lg font-black text-slate-800 mt-1">
+                            {subject.name} ({subject.code})
+                          </h2>
+                          <p className="text-[9px] text-slate-400 mt-0.5">
+                            B.Tech. VI Sem Exam • Year {previewFile.title.match(/\d+/)?.[0] || '2025'}
+                          </p>
                         </div>
-                        <p className="italic text-slate-450 text-[11px] font-bold">
-                          Note: Attempt any FIVE questions. All questions carry equal marks.
-                        </p>
-                        
-                        <div className="space-y-3.5 pt-2">
-                          {subjectQuestions.slice(0, 5).map((q, idx) => (
-                            <div key={q.id} className="flex gap-2">
-                              <span className="font-bold text-slate-800">Q.{idx + 1}</span>
-                              <div>
-                                <p className="font-bold text-slate-805">{q.question}</p>
-                                <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-black uppercase mt-1 inline-block">
-                                  [{q.type}]
+
+                        <div className="space-y-4 text-xs leading-relaxed text-slate-650 font-semibold">
+                          <div className="flex justify-between text-[10px] border-b pb-2 text-slate-450 font-bold">
+                            <span>TIME: 3 HOURS</span>
+                            <span>MAX MARKS: 70</span>
+                          </div>
+                          <p className="italic text-slate-450 text-[11px] font-bold">
+                            Note: Attempt any FIVE questions. All questions carry equal marks.
+                          </p>
+                          
+                          <div className="space-y-3.5 pt-2">
+                            {subjectQuestions.slice(0, 5).map((q, idx) => (
+                              <div key={q.id} className="flex gap-2">
+                                <span className="font-bold text-slate-800">Q.{idx + 1}</span>
+                                <div>
+                                  <p className="font-bold text-slate-805">{q.question}</p>
+                                  <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-black uppercase mt-1 inline-block">
+                                    [{q.type}]
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="border-b-2 border-primary-500 pb-4 text-center">
+                          <p className="text-[10px] uppercase font-black text-slate-450 tracking-wider">📚 LECTURE STUDY NOTE</p>
+                          <h2 className="font-display text-base sm:text-lg font-black text-slate-800 mt-1">
+                            {previewFile.title}
+                          </h2>
+                          <p className="text-[9px] text-slate-400 mt-0.5">
+                            Subject: {subject.name} ({subject.code})
+                          </p>
+                        </div>
+
+                        <div className="space-y-4 text-xs leading-relaxed text-slate-650 font-semibold max-h-[360px] overflow-y-auto pr-1">
+                          <p className="font-black text-slate-800 text-[13px] border-b pb-1">1. Subject Syllabus Core</p>
+                          <ul className="list-disc pl-4 space-y-1.5 text-slate-600">
+                            {subject.overview.syllabus.map((line, i) => (
+                              <li key={i}>{line}</li>
+                            ))}
+                          </ul>
+
+                          <p className="font-black text-slate-855 text-[13px] border-b pb-1 pt-2">2. Important Term definitions</p>
+                          <div className="space-y-2">
+                            {subject.oneNightRevision.definitions.slice(0, 2).map((def, i) => (
+                              <div key={i} className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                                <p className="font-bold text-primary-600 uppercase text-[10px]">{def.term}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">{def.definition}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {subject.oneNightRevision.formulas.length > 0 && (
+                            <>
+                              <p className="font-black text-slate-805 text-[13px] border-b pb-1 pt-2">3. Reference Formulas</p>
+                              <div className="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl text-center font-mono text-[10px] text-slate-600 leading-relaxed font-bold">
+                                {subject.oneNightRevision.formulas[0].name}:<br />
+                                <span className="text-primary-600 font-black text-xs block my-1">
+                                  {subject.oneNightRevision.formulas[0].formula}
+                                </span>
+                                <span className="text-[9px] text-slate-450 block">
+                                  {subject.oneNightRevision.formulas[0].explanation}
                                 </span>
                               </div>
-                            </div>
-                          ))}
+                            </>
+                          )}
                         </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="border-b-2 border-primary-500 pb-4 text-center">
-                        <p className="text-[10px] uppercase font-black text-slate-450 tracking-wider">📚 LECTURE STUDY NOTE</p>
-                        <h2 className="font-display text-base sm:text-lg font-black text-slate-800 mt-1">
-                          {previewFile.title}
-                        </h2>
-                        <p className="text-[9px] text-slate-400 mt-0.5">
-                          Subject: {subject.name} ({subject.code})
-                        </p>
-                      </div>
+                      </>
+                    )}
+                  </div>
 
-                      <div className="space-y-4 text-xs leading-relaxed text-slate-650 font-semibold max-h-[360px] overflow-y-auto pr-1">
-                        <p className="font-black text-slate-800 text-[13px] border-b pb-1">1. Subject Syllabus Core</p>
-                        <ul className="list-disc pl-4 space-y-1.5 text-slate-600">
-                          {subject.overview.syllabus.map((line, i) => (
-                            <li key={i}>{line}</li>
-                          ))}
-                        </ul>
-
-                        <p className="font-black text-slate-805 text-[13px] border-b pb-1 pt-2">2. Important Term definitions</p>
-                        <div className="space-y-2">
-                          {subject.oneNightRevision.definitions.slice(0, 2).map((def, i) => (
-                            <div key={i} className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                              <p className="font-bold text-primary-600 uppercase text-[10px]">{def.term}</p>
-                              <p className="text-[11px] text-slate-500 mt-0.5">{def.definition}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {subject.oneNightRevision.formulas.length > 0 && (
-                          <>
-                            <p className="font-black text-slate-805 text-[13px] border-b pb-1 pt-2">3. Reference Formulas</p>
-                            <div className="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl text-center font-mono text-[10px] text-slate-600 leading-relaxed font-bold">
-                              {subject.oneNightRevision.formulas[0].name}:<br />
-                              <span className="text-primary-600 font-black text-xs block my-1">
-                                {subject.oneNightRevision.formulas[0].formula}
-                              </span>
-                              <span className="text-[9px] text-slate-450 block">
-                                {subject.oneNightRevision.formulas[0].explanation}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase tracking-wider mt-4">
+                    <span>Page 1 of {previewFile.type === 'pyq' ? '1' : '3'} (Interactive Preview)</span>
+                    <span>RGPV Exam Hub</span>
+                  </div>
                 </div>
-
-                <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase tracking-wider mt-4">
-                  <span>Page 1 of {previewFile.type === 'pyq' ? '1' : '3'} (Interactive Preview)</span>
-                  <span>RGPV Exam Hub</span>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="border-t border-slate-200/50 dark:border-slate-800/40 p-4.5 flex justify-end gap-2.5">
@@ -1841,41 +1849,53 @@ function CommunitySection() {
   
   const [authorName, setAuthorName] = useState('');
   const [success, setSuccess] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedThumbnailFile, setSelectedThumbnailFile] = useState<File | null>(null);
 
   const availableSubjects = SUBJECTS.filter(
     s => s.branchId === selectedBranch && s.semester === Number(selectedSemester)
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !selectedSubject || !authorName) {
-      showToast('Please fill out all fields!', 'error');
+    if (!title || !selectedSubject || !authorName || !selectedFile) {
+      showToast('Please fill out all fields, including the PDF file!', 'error');
       return;
     }
 
-    const mockSizes = ['1.2 MB', '2.5 MB', '0.8 MB', '3.1 MB', '4.4 MB'];
-    const fileSize = mockSizes[Math.floor(Math.random() * mockSizes.length)];
+    const sizeInMB = (selectedFile.size / (1024 * 1024)).toFixed(1);
+    const fileSize = `${sizeInMB} MB`;
 
-    uploadResource({
-      title,
-      subjectId: selectedSubject,
-      unit: resourceType === 'note' ? 'All Units' : undefined,
-      category: resourceType === 'note' ? noteCategory : undefined,
-      year: resourceType === 'pyq' ? pyqYear : undefined,
-      examType: resourceType === 'pyq' ? pyqType : undefined,
-      type: resourceType,
-      author: authorName,
-      fileSize
-    });
+    const wasSuccess = await uploadResource(
+      {
+        title,
+        subjectId: selectedSubject,
+        semester: Number(selectedSemester),
+        branch: selectedBranch,
+        unit: resourceType === 'note' ? 'All Units' : undefined,
+        category: resourceType === 'note' ? noteCategory : undefined,
+        year: resourceType === 'pyq' ? pyqYear : undefined,
+        examType: resourceType === 'pyq' ? pyqType : undefined,
+        type: resourceType,
+        author: authorName,
+        fileSize
+      },
+      selectedFile,
+      selectedThumbnailFile || undefined
+    );
 
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    setSuccess(true);
-    
-    setTitle('');
-    setSelectedBranch('');
-    setSelectedSemester('');
-    setSelectedSubject('');
-    setAuthorName('');
+    if (wasSuccess) {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      setSuccess(true);
+      
+      setTitle('');
+      setSelectedBranch('');
+      setSelectedSemester('');
+      setSelectedSubject('');
+      setAuthorName('');
+      setSelectedFile(null);
+      setSelectedThumbnailFile(null);
+    }
   };
 
   const getSubjectName = (id: string) => {
@@ -2077,11 +2097,26 @@ function CommunitySection() {
                 </div>
               )}
 
-              {/* Upload Box mockup */}
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary-500/50 rounded-2.5xl p-6.5 text-center space-y-2.5 transition-colors">
-                <UploadCloud className="w-10 h-10 text-slate-300 mx-auto" />
-                <p className="text-xs font-bold text-slate-650 dark:text-slate-350">Drag and drop syllabus PDF here, or click to browse</p>
-                <p className="text-[10px] text-slate-400 font-bold">Max file size: 10MB</p>
+              {/* Real PDF File Upload Box */}
+              <div className="space-y-1.5">
+                <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary-500/50 rounded-2.5xl p-6.5 text-center space-y-2.5 transition-colors cursor-pointer flex flex-col justify-center items-center">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setSelectedFile(e.target.files[0]);
+                      }
+                    }}
+                    className="hidden"
+                    required
+                  />
+                  <UploadCloud className={`w-10 h-10 ${selectedFile ? 'text-primary-500' : 'text-slate-300'} mx-auto`} />
+                  <p className="text-xs font-bold text-slate-650 dark:text-slate-350">
+                    {selectedFile ? `Selected: ${selectedFile.name}` : "Click to browse and upload notes PDF"}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-bold">Max file size: 10MB (PDF format only)</p>
+                </label>
               </div>
 
               <button 
