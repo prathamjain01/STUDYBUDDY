@@ -1,12 +1,10 @@
+import "dotenv/config";
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import { connectdb } from "./config/db.js";
 import userRouter from "./routes/user.routes.js";
 import noteRouter from "./routes/noteRoutes.js";
 import pyqRouter from "./routes/pyqRoutes.js";
-
-dotenv.config();
 
 const app = express();
 

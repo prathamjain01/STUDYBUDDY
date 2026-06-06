@@ -1008,7 +1008,7 @@ function SubjectSection({ params, navigate }: { params: Record<string, string>; 
   const [notesSearch, setNotesSearch] = useState('');
   const [selectedUnitFilter, setSelectedUnitFilter] = useState('All');
   
-  const [previewFile, setPreviewFile] = useState<{ title: string; type: 'note' | 'pyq'; pdfUrl?: string } | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ id?: string; title: string; type: 'note' | 'pyq'; pdfUrl?: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const subject = SUBJECTS.find(s => s.id === subjectId);
@@ -1057,6 +1057,16 @@ function SubjectSection({ params, navigate }: { params: Record<string, string>; 
       spread: 60,
       origin: { y: 0.8 }
     });
+
+    const resource = type === 'note' 
+      ? notes.find(n => n.id === id) 
+      : pyqs.find(p => p.id === id);
+
+    if (resource && resource.pdfUrl) {
+      window.open(resource.pdfUrl, '_blank');
+      showToast(`"${title}" PDF opened in a new tab for download!`, 'success');
+      return;
+    }
 
     let fileText = '';
     if (type === 'pyq') {
@@ -1314,7 +1324,7 @@ RGPV Exam Hub.`;
                       <span>{note.fileSize} • {note.downloads} Downloads</span>
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => setPreviewFile({ title: note.title, type: 'note', pdfUrl: note.pdfUrl })}
+                          onClick={() => setPreviewFile({ id: note.id, title: note.title, type: 'note', pdfUrl: note.pdfUrl })}
                           className="flex items-center gap-1 hover:text-primary-500 transition-colors bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40 py-1.5 px-3 rounded-lg cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" /> View
@@ -1362,7 +1372,7 @@ RGPV Exam Hub.`;
                       <span>{pyq.fileSize} • {pyq.downloads} Downloads</span>
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => setPreviewFile({ title: `RGPV ${pyq.year} PYQ Paper`, type: 'pyq', pdfUrl: pyq.pdfUrl })}
+                          onClick={() => setPreviewFile({ id: pyq.id, title: `RGPV ${pyq.year} PYQ Paper`, type: 'pyq', pdfUrl: pyq.pdfUrl })}
                           className="flex items-center gap-1 hover:text-primary-500 transition-colors bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40 py-1.5 px-3 rounded-lg cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" /> View
@@ -1673,12 +1683,23 @@ RGPV Exam Hub.`;
                 </span>
                 <h4 className="text-sm sm:text-base font-bold text-slate-700 dark:text-white truncate max-w-lg mt-1">{previewFile.title}</h4>
               </div>
-              <button 
-                onClick={() => setPreviewFile(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                {previewFile.pdfUrl && (
+                  <button 
+                    onClick={() => window.open(previewFile.pdfUrl, '_blank')}
+                    title="Open PDF in new tab"
+                    className="p-2 rounded-xl text-slate-500 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                  </button>
+                )}
+                <button 
+                  onClick={() => setPreviewFile(null)}
+                  className="p-2 rounded-xl text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 bg-slate-100/60 dark:bg-slate-900/60 p-4 overflow-hidden flex justify-center items-center">
@@ -1793,7 +1814,11 @@ RGPV Exam Hub.`;
               </button>
               <button 
                 onClick={() => {
-                  handleDownload(`pre-${Date.now()}`, previewFile.title, previewFile.type);
+                  if (previewFile.id) {
+                    handleDownload(previewFile.id, previewFile.title, previewFile.type);
+                  } else {
+                    handleDownload(`pre-${Date.now()}`, previewFile.title, previewFile.type);
+                  }
                   setPreviewFile(null);
                 }}
                 className="text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 py-2.5 px-5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-primary-500/20"
@@ -2756,6 +2781,14 @@ function AdminSection({ navigate }: { navigate: (hash: string) => void }) {
                     </div>
 
                     <div className="border-t border-slate-100 dark:border-slate-800/30 mt-5 pt-3.5 flex justify-end gap-2 text-xs font-bold">
+                      {item.pdfUrl && (
+                        <button 
+                          onClick={() => window.open(item.pdfUrl, '_blank')}
+                          className="flex items-center gap-1.5 hover:text-primary-500 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40 py-1.5 px-3.5 rounded-lg cursor-pointer mr-auto animate-pulse"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View PDF
+                        </button>
+                      )}
                       <button 
                         onClick={() => setRejectId(item.id)}
                         className="flex items-center gap-1.5 hover:text-red-500 bg-red-50 dark:bg-red-950/25 border border-red-500/10 py-1.5 px-3.5 rounded-lg cursor-pointer"
