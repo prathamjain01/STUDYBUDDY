@@ -94,12 +94,172 @@ export const uploadPYQ = async (req, res, next) => {
  */
 export const getAllPYQs = async (req, res, next) => {
     try {
-        const pyqs = await PYQ.find().sort({ year: -1, createdAt: -1 });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const totalPyqs = await PYQ.countDocuments();
+        const pyqs = await PYQ.find()
+            .sort({ year: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
         res.status(200).json({
             success: true,
             message: "PYQ papers retrieved successfully",
+            data: pyqs,
+            pagination: {
+                totalPyqs,
+                page,
+                limit,
+                totalPages: Math.ceil(totalPyqs / limit)
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Search PYQ papers by subject, year, or exam type
+ */
+export const searchPYQs = async (req, res, next) => {
+    try {
+        const { query } = req.query;
+        if (!query) {
+            return res.status(400).json({
+                success: false,
+                message: "Search query is required"
+            });
+        }
+
+        const searchRegex = new RegExp(query, "i");
+        const pyqs = await PYQ.find({
+            $or: [
+                { subject: searchRegex },
+                { branch: searchRegex }
+            ]
+        }).sort({ year: -1, createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            message: "Search results retrieved successfully",
             data: pyqs
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Filter PYQ papers by semester, subject, branch, or year
+ */
+export const filterPYQs = async (req, res, next) => {
+    try {
+        const { semester, subject, branch, year, examType } = req.query;
+        const filter = {};
+
+        if (semester) filter.semester = Number(semester);
+        if (subject) filter.subject = { $regex: new RegExp(subject, "i") };
+        if (branch) filter.branch = { $regex: new RegExp(branch, "i") };
+        if (year) filter.year = Number(year);
+        if (examType) filter.examType = examType;
+
+        const pyqs = await PYQ.find(filter).sort({ year: -1, createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            message: "Filtered PYQ papers retrieved successfully",
+            data: pyqs
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Retrieve a single PYQ by ID
+ */
+export const getSinglePYQ = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const pyq = await PYQ.findById(id);
+
+        if (!pyq) {
+            return res.status(404).json({
+                success: false,
+                message: "PYQ not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "PYQ retrieved successfully",
+            data: pyq
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Increment download count for a PYQ and return PDF URL
+ */
+export const downloadPYQ = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const pyq = await PYQ.findByIdAndUpdate(
+            id,
+            { $inc: { downloads: 1 } },
+            { new: true }
+        );
+
+        if (!pyq) {
+            return res.status(404).json({
+                success: false,
+                message: "PYQ not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "PYQ download registered",
+            data: {
+                pdfUrl: pyq.pdfUrl,
+                downloads: pyq.downloads
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Delete a PYQ by ID and delete associated PDF from Cloudinary
+ */
+export const deletePYQ = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const pyq = await PYQ.findById(id);
+
+        if (!pyq) {
+            return res.status(404).json({
+                success: false,
+                message: "PYQ not found"
+            });
+        }
+
+        // Delete from Cloudinary
+        if (pyq.pdfPublicId) {
+            await cloudinary.uploader.destroy(pyq.pdfPublicId);
+        }
+
+        // Delete from MongoDB
+        await PYQ.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: "PYQ deleted successfully"
         });
     } catch (error) {
         next(error);

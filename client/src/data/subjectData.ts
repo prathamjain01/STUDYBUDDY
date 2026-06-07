@@ -152,7 +152,7 @@ export const BRANCHES: Branch[] = [
 ];
 
 // --- UPPER SEMESTER SUBJECTS (CS BRANCH) ---
-const UPPER_SEM_SUBJECTS: Subject[] = [
+export const UPPER_SEM_SUBJECTS: Subject[] = [
   {
     "id": "ds",
     "name": "Discrete Structure",

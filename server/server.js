@@ -13,33 +13,42 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-connectdb();
+// Database connection and server startup
+const startServer = async () => {
+    try {
+        await connectdb();
+        
+        // Routes
+        app.use("/api/user", userRouter);
+        app.use("/api/notes", noteRouter);
+        app.use("/api/pyqs", pyqRouter);
+        
+        // Centralized error handling middleware
+        app.use((err, req, res, next) => {
+            console.error("Centralized Error Handler:", err.stack || err.message || err);
+            
+            // Handle Multer specific errors
+            if (err.code === "LIMIT_FILE_SIZE") {
+                return res.status(400).json({
+                    success: false,
+                    message: "File size exceeds limit (max 20MB)"
+                });
+            }
 
-// Routes
-app.use("/api/user", userRouter);
-app.use("/api/notes", noteRouter);
-app.use("/api/pyqs", pyqRouter);
-
-// Centralized error handling middleware
-app.use((err, req, res, next) => {
-    console.error("Centralized Error Handler:", err.stack || err.message || err);
-    
-    // Handle Multer specific errors
-    if (err.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({
-            success: false,
-            message: "File size exceeds limit (max 20MB)"
+            const statusCode = err.status || 500;
+            res.status(statusCode).json({
+                success: false,
+                message: err.message || "Something went wrong"
+            });
         });
+        
+        app.listen(process.env.PORT, () => {
+            console.log(`Server running at port ${process.env.PORT}`);
+        });
+    } catch (error) {
+        console.error("Failed to start server:", error);
+        process.exit(1);
     }
+};
 
-    const statusCode = err.status || 500;
-    res.status(statusCode).json({
-        success: false,
-        message: err.message || "Something went wrong"
-    });
-});
-
-app.listen(process.env.PORT, () => {
-    console.log(`Server running at port ${process.env.PORT}`);
-});
+startServer();

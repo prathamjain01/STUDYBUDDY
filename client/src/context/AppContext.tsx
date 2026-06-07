@@ -1,6 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_NOTES, INITIAL_PYQS } from '../data/subjectData';
+import { INITIAL_NOTES, INITIAL_PYQS, SUBJECTS } from '../data/subjectData';
 import type { Note, PYQ } from '../data/subjectData';
+
+// Create a mapping of subject names to their IDs
+function createSubjectNameMap() {
+  const nameToId: Record<string, string> = {};
+  
+  SUBJECTS.forEach(subject => {
+    nameToId[subject.name.toLowerCase()] = subject.id;
+  });
+  
+  return nameToId;
+}
+
+const SUBJECT_NAME_MAP = createSubjectNameMap();
 
 
 export interface User {
@@ -125,24 +138,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch("http://localhost:3000/api/notes?limit=100");
         if (response.ok) {
           const resData = await response.json();
-          const backendNotes = resData.data.notes; // Array of Notes from backend
+          const backendNotes = resData.data.notes || resData.data || []; // Array of Notes from backend
           
           // Map backend notes schema to frontend Note schema
-          const mappedNotes: Note[] = backendNotes.map((bn: any) => ({
-            id: bn._id,
-            subjectId: bn.subject, // Map 'subject' field to 'subjectId'
-            title: bn.title,
-            unit: bn.unit || "All Units",
-            category: bn.category || "Student Notes",
-            author: bn.uploadedBy || "Admin",
-            uploadDate: bn.createdAt ? bn.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
-            fileSize: bn.fileSize || "2.4 MB",
-            downloads: bn.downloads || 0,
-            isCommunity: true,
-            approved: true, // Backend retrieves approved notes by default
-            pdfUrl: bn.pdfUrl,
-            thumbnailUrl: bn.thumbnailUrl || ""
-          }));
+          const mappedNotes: Note[] = backendNotes
+            .map((bn: any) => {
+              // Convert subject name to subject ID
+              const subjectName = bn.subject?.toLowerCase() || '';
+              const subjectId = SUBJECT_NAME_MAP[subjectName] || 'unknown';
+              
+              return {
+                id: bn._id,
+                subjectId: subjectId,
+                title: bn.title,
+                unit: bn.unit || "All Units",
+                category: bn.category || "Student Notes",
+                author: bn.uploadedBy || "Admin",
+                uploadDate: bn.createdAt ? bn.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                fileSize: bn.fileSize || "2.4 MB",
+                downloads: bn.downloads || 0,
+                isCommunity: true,
+                approved: true,
+                pdfUrl: bn.pdfUrl,
+                thumbnailUrl: bn.thumbnailUrl || ""
+              };
+            })
+            .filter(n => n.subjectId !== 'unknown'); // Filter out unmapped subjects
 
           setNotes(prevNotes => {
             // Filter out notes that have the same id to avoid duplicates
@@ -158,24 +179,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const fetchBackendPyqs = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/pyqs");
+        const response = await fetch("http://localhost:3000/api/pyqs?limit=100");
         if (response.ok) {
           const resData = await response.json();
-          const backendPyqs = resData.data; // Array of PYQs from backend
+          // Handle both direct array and data property
+          const backendPyqs = Array.isArray(resData.data) ? resData.data : (resData.data || []);
           
           // Map backend pyq schema to frontend PYQ schema
-          const mappedPyqs: PYQ[] = backendPyqs.map((bp: any) => ({
-            id: bp._id,
-            subjectId: bp.subject, // Map 'subject' field to 'subjectId'
-            year: bp.year,
-            examType: bp.examType || "Regular",
-            fileSize: bp.fileSize || "2.4 MB",
-            downloads: bp.downloads || 0,
-            isCommunity: true,
-            approved: true, // Backend retrieves approved PYQs by default
-            pdfUrl: bp.pdfUrl,
-            author: bp.uploadedBy || "Anonymous"
-          }));
+          const mappedPyqs: PYQ[] = backendPyqs
+            .map((bp: any) => {
+              // Convert subject name to subject ID
+              const subjectName = bp.subject?.toLowerCase() || '';
+              const subjectId = SUBJECT_NAME_MAP[subjectName] || 'unknown';
+              
+              return {
+                id: bp._id,
+                subjectId: subjectId,
+                year: bp.year,
+                examType: bp.examType || "Regular",
+                fileSize: bp.fileSize || "2.4 MB",
+                downloads: bp.downloads || 0,
+                isCommunity: true,
+                approved: true,
+                pdfUrl: bp.pdfUrl,
+                author: bp.uploadedBy || "Anonymous"
+              };
+            })
+            .filter(p => p.subjectId !== 'unknown'); // Filter out unmapped subjects
 
           setPyqs(prevPyqs => {
             const localIds = new Set(prevPyqs.map(p => p.id));
