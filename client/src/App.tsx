@@ -894,6 +894,26 @@ function SemesterSection({ params, navigate }: { params: Record<string, string>;
   const branch = BRANCHES.find(b => b.id === branchId);
   const semesterNum = Number(semId);
 
+  const [backendPyqs, setBackendPyqs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPyqs = async () => {
+      try {
+        // Fetch PYQs for this specific branch and semester
+        const res = await fetch(`http://localhost:3000/api/pyqs/filter?branch=${branchId}&semester=${semesterNum}`);
+        if (res.ok) {
+          const data = await res.json();
+          setBackendPyqs(data.data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching pyqs:", error);
+      }
+    };
+    if (branchId && !isNaN(semesterNum)) {
+      fetchPyqs();
+    }
+  }, [branchId, semesterNum]);
+
   if (!branch || isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
@@ -978,6 +998,54 @@ function SemesterSection({ params, navigate }: { params: Record<string, string>;
                 </button>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* Backend PYQs Section */}
+      <section className="space-y-6">
+        <h2 className="font-display text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary-500" />
+          Previous Year Questions (Backend Data)
+        </h2>
+
+        {backendPyqs.length === 0 ? (
+          <div className="glass-panel p-8 text-center rounded-2.5xl border-dashed border-slate-300 dark:border-slate-800">
+            <h3 className="font-bold text-slate-700 dark:text-slate-300">No PYQs found in backend</h3>
+            <p className="text-xs text-slate-500 mt-2">Upload some PYQs from Postman or the app to see them here.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {backendPyqs.map((pyq) => (
+              <div key={pyq._id} className="glass-panel text-left rounded-2.5xl p-6 flex flex-col justify-between group border-slate-200/50 dark:border-slate-800/40">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] uppercase font-black text-primary-500 bg-primary-50 dark:bg-primary-950/20 px-2.5 py-1 rounded-lg">
+                      {pyq.examType} Exam
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{pyq.year}</span>
+                  </div>
+                  <h3 className="font-display text-base font-black text-slate-700 dark:text-white leading-snug">
+                    {pyq.subject}
+                  </h3>
+                  <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-400">
+                    <span>Sem {pyq.semester}</span>
+                    <span>•</span>
+                    <span>{pyq.branch}</span>
+                  </div>
+                </div>
+                <div className="mt-5 pt-4 border-t border-slate-200/45 dark:border-slate-800/30 flex items-center justify-between">
+                  <a 
+                    href={pyq.pdfUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-primary-500 hover:text-primary-600 flex items-center gap-1 transition-colors"
+                  >
+                    View PDF <ChevronRight className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
