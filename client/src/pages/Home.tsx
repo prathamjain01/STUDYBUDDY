@@ -56,8 +56,8 @@ const Home = () => {
 {/* Filters */}
 <div className="flex gap-sm">
 <div className="relative w-1/2 md:w-auto">
-<select className="w-full appearance-none bg-background border border-outline-variant rounded-lg text-on-background font-body-md text-body-md pl-md pr-xl py-md focus:border-primary focus:ring-1 focus:ring-primary">
-<option disabled="" selected="" value="">Branch</option>
+<select defaultValue="" className="w-full appearance-none bg-background border border-outline-variant rounded-lg text-on-background font-body-md text-body-md pl-md pr-xl py-md focus:border-primary focus:ring-1 focus:ring-primary">
+<option disabled value="">Branch</option>
 <option value="cse">CSE</option>
 <option value="it">IT</option>
 <option value="ece">ECE</option>
@@ -66,8 +66,8 @@ const Home = () => {
 <span className="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
 </div>
 <div className="relative w-1/2 md:w-auto">
-<select className="w-full appearance-none bg-background border border-outline-variant rounded-lg text-on-background font-body-md text-body-md pl-md pr-xl py-md focus:border-primary focus:ring-1 focus:ring-primary">
-<option disabled="" selected="" value="">Semester</option>
+<select defaultValue="" className="w-full appearance-none bg-background border border-outline-variant rounded-lg text-on-background font-body-md text-body-md pl-md pr-xl py-md focus:border-primary focus:ring-1 focus:ring-primary">
+<option disabled value="">Semester</option>
 <option value="1">Sem 1</option>
 <option value="2">Sem 2</option>
 <option value="3">Sem 3</option>

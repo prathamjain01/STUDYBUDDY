@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -6,7 +6,7 @@ const AdminDashboard = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = (e: FormEvent) => {
     e.preventDefault();
     if (password === 'admin123') { // Simple secret for now
       setIsAuthenticated(true);
