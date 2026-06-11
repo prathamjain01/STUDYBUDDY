@@ -1,6 +1,6 @@
-# StudyBudy - Student Notes Sharing Platform Backend
+# StudyBudy - Student Notes Sharing Platform
 
-**StudyBudy** is a production-ready MERN stack backend foundation designed for a collaborative student notes sharing platform. It supports storing rich note metadata, tracking analytics (views and downloads), indexing for search, filtering by categories, and handling external storage assets.
+**StudyBudy** is a full-stack MERN (MongoDB, Express, React, Node.js) application designed for a collaborative student notes sharing platform. It features a modern, responsive frontend and a robust backend supporting rich note metadata, tracking analytics (views and downloads), indexing for search, filtering by categories, and handling external storage assets.
 
 ---
 
@@ -29,8 +29,8 @@ graph TD
 
 ```
 STUDYBUDDY/
-├── client/                     # Frontend client workspace (to be implemented)
-└── server/                     # Backend server workspace
+├── client/                     # Frontend workspace (React, TypeScript, Vite, Tailwind CSS)
+└── server/                     # Backend workspace (Node.js, Express, MongoDB)
     ├── config/
     │   ├── db.js                 # MongoDB Mongoose connection
     │   └── cloudinary.js         # Cloudinary configuration (retained for asset storage)
@@ -139,17 +139,17 @@ Stores metadata of student notes, including counts for analytics and links to ex
 
 ### Local Quickstart
 
-1. **Clone & Navigate:**
+1. **Clone the repository & Navigate:**
+   ```bash
+   git clone <repository-url>
+   cd STUDYBUDDY
+   ```
+
+2. **Backend Setup:**
    ```bash
    cd server
-   ```
-
-2. **Install Dependencies:**
-   ```bash
    npm install
    ```
-
-3. **Configure Environment Variables:**
    Create a `.env` file in the `server` directory and paste your connection credentials:
    ```env
    PORT=3000
@@ -162,19 +162,29 @@ Stores metadata of student notes, including counts for analytics and links to ex
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
    ```
-
-4. **Run the Development Server:**
+   Run the Development Server:
    ```bash
    npm run start
    # Or using nodemon
    npx nodemon
    ```
 
+3. **Frontend Setup:**
+   Open a new terminal and navigate to the client directory:
+   ```bash
+   cd client
+   npm install
+   ```
+   Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+
 ---
 
 ## 🔒 Security & Optimization Best Practices
 
-* **DNS Resolution Safety:** Configured standard multi-host MongoDB connection string formats to bypass standard Node.js `querySrv` lookups, solving DNS errors (`ECONNREFUSED`) in local development environments.
+* **DNS Resolution Safety:** Configured standard multi-host MongoDB connection string formats to bypass standard Node.js `querySrv` lookups, solving DNS errors (`ECONNREFUSEDD`) in local development environments.
 * **CORS Middleware:** Secured using CORS policy constraints to handle browser request cross-origins safely.
 * **Unified Error Handling:** Embedded a centralized Express global error handler middleware ensuring errors do not leak stack traces to client responses and always follow the `{ success: false, message: "..." }` format.
 * **Automatic Temp Cleanup:** Features automated file destruction scripts (`fs.unlinkSync`) inside controller `finally` blocks for endpoints handling local Multer file uploading.
