@@ -327,7 +327,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   ) => {
     try {
       const formData = new FormData();
-      formData.append("subject", resource.subjectId);
+      const subjectName = SUBJECTS.find(s => s.id === resource.subjectId)?.name || resource.subjectId;
+      formData.append("subject", subjectName);
       formData.append("semester", String(resource.semester));
       formData.append("branch", resource.branch);
       formData.append("uploadedBy", resource.author);

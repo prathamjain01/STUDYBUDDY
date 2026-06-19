@@ -1102,8 +1102,76 @@ function SubjectSection({ params, navigate }: { params: Record<string, string>; 
     );
   }
 
-  const subjectNotes = notes.filter(n => n.subjectId === subjectId && n.approved);
-  const subjectPyqs = pyqs.filter(p => p.subjectId === subjectId && p.approved);
+  const [backendNotes, setBackendNotes] = useState<any[]>([]);
+  const [backendPyqs, setBackendPyqs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSubjectData = async () => {
+      try {
+        const [notesRes, pyqsRes] = await Promise.all([
+          fetch(`http://localhost:3000/api/notes/filter?subject=${encodeURIComponent(subject.name)}`),
+          fetch(`http://localhost:3000/api/pyqs/filter?subject=${encodeURIComponent(subject.name)}`)
+        ]);
+        
+        if (notesRes.ok) {
+          const notesData = await notesRes.json();
+          setBackendNotes(notesData.data || []);
+        }
+        if (pyqsRes.ok) {
+          const pyqsData = await pyqsRes.json();
+          setBackendPyqs(pyqsData.data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching subject data:", error);
+      }
+    };
+    if (subjectId) {
+      fetchSubjectData();
+    }
+  }, [subjectId]);
+
+  const mappedBackendNotes = backendNotes.map(bn => ({
+    id: bn._id,
+    subjectId: bn.subject,
+    title: bn.title,
+    unit: bn.unit || "All Units",
+    category: bn.category || "Student Notes",
+    author: bn.uploadedBy || "Admin",
+    uploadDate: bn.createdAt ? bn.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+    fileSize: bn.fileSize || "2.4 MB",
+    downloads: bn.downloads || 0,
+    isCommunity: true,
+    approved: true,
+    pdfUrl: bn.pdfUrl,
+    thumbnailUrl: bn.thumbnailUrl || ""
+  })) as Note[];
+
+  const subjectNotes = [...notes.filter(n => n.subjectId === subjectId && n.approved)];
+  mappedBackendNotes.forEach(bn => {
+    if (!subjectNotes.some(n => n.id === bn.id)) {
+      subjectNotes.push(bn);
+    }
+  });
+
+  const mappedBackendPyqs = backendPyqs.map(bp => ({
+    id: bp._id,
+    subjectId: bp.subject,
+    year: bp.year,
+    examType: bp.examType || "Regular",
+    fileSize: bp.fileSize || "2.4 MB",
+    downloads: bp.downloads || 0,
+    isCommunity: true,
+    approved: true,
+    pdfUrl: bp.pdfUrl,
+    author: bp.uploadedBy || "Anonymous"
+  })) as PYQ[];
+
+  const subjectPyqs = [...pyqs.filter(p => p.subjectId === subjectId && p.approved)];
+  mappedBackendPyqs.forEach(bp => {
+    if (!subjectPyqs.some(p => p.id === bp.id)) {
+      subjectPyqs.push(bp);
+    }
+  });
   const subjectQuestions = IMPORTANT_QUESTIONS.filter(q => q.subjectId === subjectId);
 
   const studiedInSubject = subjectQuestions.filter(q => studied.includes(q.id)).length;
