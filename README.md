@@ -1,6 +1,6 @@
 # StudyBudy - Student Notes Sharing Platform
 
-**StudyBudy** is a full-stack MERN (MongoDB, Express, React, Node.js) application designed for a collaborative student notes sharing platform. It features a modern, responsive frontend and a robust backend supporting rich note metadata, tracking analytics (views and downloads), indexing for search, filtering by categories, and handling external storage assets.
+**StudyBudy** is a full-stack MERN (MongoDB, Express, React, Node.js) application designed for a collaborative student notes sharing platform. It features a modern, responsive frontend and a robust backend supporting rich note metadata, tracking analytics (views and downloads), indexing for search, filtering by categories, and handling external storage assets. The frontend is fully integrated with the backend APIs to dynamically fetch, map, and display community-uploaded notes and Previous Year Questions (PYQs).
 
 ---
 
@@ -128,6 +128,13 @@ Stores metadata of student notes, including counts for analytics and links to ex
 * **Delete Note**
   * **Endpoint:** `DELETE /api/notes/:id`
   * **Behavior:** Deletes the record from MongoDB and attempts cleanup in Cloudinary if matching public IDs exist.
+
+### PYQs Endpoints (`/api/pyqs`)
+
+* **Filter PYQs**
+  * **Endpoint:** `GET /api/pyqs/filter?subject=Data%20Structures`
+  * **Behavior:** Fetches Previous Year Questions based on subject and other filters.
+  * **Query Params:** `subject`, `semester`, `branch`, `university`
 
 ---
 
