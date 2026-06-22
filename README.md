@@ -23,6 +23,13 @@ graph TD
 3. **Database Layer (`/models`)**: Defines structured schemas with robust built-in validations.
 4. **Configuration (`/config`)**: Manages external service connections (MongoDB Atlas, Cloudinary) via environment variables.
 
+### Frontend Architecture & State Management
+The React frontend leverages a global context (`AppContext.tsx`) to provide a seamless and highly responsive experience:
+* **State Hydration:** Application state (notes, PYQs, user profiles, bookmarks, analytics) is cached in the browser's `localStorage` and rehydrated on load to ensure offline-capability and rapid content delivery.
+* **Dynamic Backend Integration:** Real-time data is fetched globally from backend APIs (`/api/notes` and `/api/pyqs`) and combined with local states. It maps complex MongoDB schemas dynamically to frontend TypeScript interfaces.
+* **Optimistic UI Updates:** Actions like bookmarking, downloading, and theming reflect instantly on the UI without waiting for network confirmations.
+* **Component-Level Fetching:** Specific components (like `SubjectSection` in `App.tsx`) independently query their relevant filtered data directly from the backend to ensure data relevancy without polluting the global state.
+
 ---
 
 ## 📂 Folder Structure
@@ -192,6 +199,7 @@ Stores metadata of student notes, including counts for analytics and links to ex
 ## 🔒 Security & Optimization Best Practices
 
 * **DNS Resolution Safety:** Configured standard multi-host MongoDB connection string formats to bypass standard Node.js `querySrv` lookups, solving DNS errors (`ECONNREFUSEDD`) in local development environments.
+* **Database Resiliency:** Implemented robust MongoDB connection configurations (e.g., custom timeout MS, pool sizing) and a recursive `setTimeout` retry mechanism to guarantee backend fault tolerance against unstable network states.
 * **CORS Middleware:** Secured using CORS policy constraints to handle browser request cross-origins safely.
 * **Unified Error Handling:** Embedded a centralized Express global error handler middleware ensuring errors do not leak stack traces to client responses and always follow the `{ success: false, message: "..." }` format.
 * **Automatic Temp Cleanup:** Features automated file destruction scripts (`fs.unlinkSync`) inside controller `finally` blocks for endpoints handling local Multer file uploading.
